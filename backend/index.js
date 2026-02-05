@@ -5,8 +5,11 @@ import { fetchEmailsForAlias } from "./imapWorker.js";
 
 const app = express();
 
-app.use(cors({ origin: "http://localhost:3000" }));
+const allowedOrigin = process.env.CORS_ORIGIN || "http://localhost:3000";
+
+app.use(cors({ origin: allowedOrigin }));
 app.use(express.json());
+
 
 app.get("/", (req, res) => {
   res.send("Servidor IMAP funcionando ✔");
