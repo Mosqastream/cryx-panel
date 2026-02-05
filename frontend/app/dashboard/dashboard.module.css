@@ -1,0 +1,255 @@
+/* === WRAPPER & TITLES === */
+.wrapper {
+  width: 100%;
+  min-height: 100vh;
+  padding: 20px;
+  background: radial-gradient(circle at top, #00131a 0%, #000b10 100%);
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+/* === PLATFORM LIST === */
+.platformList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.platformCard {
+  background: rgba(0, 20, 30, 0.85);
+  border: 1px solid rgba(0, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 16px 18px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  transition: 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+.platformCard:hover {
+  background: rgba(0, 40, 50, 0.95);
+  border-color: rgba(0, 255, 255, 0.35);
+}
+
+.pName {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.badge {
+  background: #007aff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* === REUSABLE SMALL REFRESH BTN === */
+.smallRefresh {
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  color: #00eaff;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.smallRefresh:hover {
+  background: rgba(0, 255, 255, 0.25);
+}
+
+/* === ICON BUTTON (PLATFORM REFRESH) === */
+.iconBtn {
+  background: rgba(0, 255, 255, 0.1);
+  color: #00eaff;
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+  transition: 0.2s;
+}
+
+.iconBtn:hover {
+  background: rgba(0, 255, 255, 0.25);
+}
+
+/* === SELECTED PLATFORM VIEW === */
+.container {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.backBtn {
+  border: none;
+  background: transparent;
+  color: #00eaff;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.backBtn:hover {
+  color: #33ffff;
+}
+
+.subtitle {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* === MAIL FILTER === */
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+}
+
+.input::placeholder {
+  color: #89a;
+}
+
+/* === MAIL LIST === */
+.mailList {
+  background: rgba(0, 20, 30, 0.85);
+  border: 1px solid rgba(0, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  backdrop-filter: blur(4px);
+}
+
+.mailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.08);
+  transition: 0.2s;
+}
+
+.mailRow:hover {
+  background: rgba(0, 255, 255, 0.04);
+}
+
+.mailText {
+  font-size: 15px;
+}
+
+/* === CONSULT BUTTON === */
+.consultBtn {
+  background: #007aff;
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.consultBtn:hover {
+  background: #2898ff;
+}
+
+/* === MODAL === */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 10, 15, 0.68);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99;
+}
+
+.modalBox {
+  width: 400px;
+  max-width: 92%;
+  background: rgba(0, 25, 35, 0.95);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* === EMAIL LIST INSIDE MODAL === */
+.emailList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.emailItem {
+  background: rgba(0, 255, 255, 0.04);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  margin-bottom: 8px;
+}
+
+.emailMeta {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+/* === MODAL BUTTONS === */
+.closeBtn {
+  background: #ff3b30;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #fff;
+  transition: 0.2s;
+}
+
+.closeBtn:hover {
+  background: #ff625b;
+}
+
+/* === MESSAGES === */
+.msg {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.9;
+}
