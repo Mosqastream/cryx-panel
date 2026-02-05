@@ -42,7 +42,9 @@ app.get("/emails", async (req, res) => {
   }
 });
 
-const PORT = 4001;
+const PORT = process.env.PORT || 4001;
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor IMAP corriendo en puerto ${PORT}`);
 });
+
