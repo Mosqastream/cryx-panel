@@ -253,3 +253,38 @@
   font-size: 14px;
   opacity: 0.9;
 }
+/* === NUEVO: badge días en lista === */
+.mailText {
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.daysBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #00181b;
+  background: linear-gradient(90deg, rgba(0,230,255,0.95), rgba(0,179,255,0.9));
+  border: 1px solid rgba(0,255,255,0.25);
+  box-shadow: 0 0 10px rgba(0,230,255,0.2);
+}
+
+.daysBadgeExpired {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffdede;
+  background: rgba(255, 60, 60, 0.18);
+  border: 1px solid rgba(255, 80, 80, 0.35);
+}

@@ -6,6 +6,7 @@ import { simpleParser } from "mailparser";
  * - Devuelve SOLO 3 correos
  * - BLOQUEA SOLO correos de "cambiar correo/email" (ES/EN/PT)
  * - Filtra por plataforma (cualquiera que agregues en tu panel)
+ * - ✅ MODO ESTRICTO: el correo DEBE contener la plataforma en subject o from
  */
 export async function fetchEmailsForAlias(alias, platform = "all") {
   const client = new ImapFlow({
@@ -61,30 +62,59 @@ export async function fetchEmailsForAlias(alias, platform = "all") {
     return BLOCK_EMAIL_CHANGE.some((k) => hay.includes(k));
   }
 
-  // Normaliza nombre de plataforma para comparar
   function norm(s) {
     return (s || "").toString().trim().toLowerCase();
   }
 
-  // Match por plataforma: from/subject contiene el nombre (o variantes comunes)
-  function matchesPlatform(subjectRaw = "", fromRaw = "", platformName = "all") {
+  /**
+   * ✅ “Estrictísimo”:
+   * - Si platformName = "Netflix" => SOLO pasa si subject/from contiene "netflix"
+   * - Si quieres tolerancia a variantes, se agregan como extra, pero SIEMPRE
+   *   tienen que incluir el nombre o una variante.
+   */
+  function matchesPlatformStrict(subjectRaw = "", fromRaw = "", platformName = "all") {
     const p = norm(platformName);
     if (!p || p === "all") return true;
 
     const subj = (subjectRaw || "").toLowerCase();
     const frm = (fromRaw || "").toLowerCase();
 
-    // Match directo
-    if (subj.includes(p) || frm.includes(p)) return true;
+    // ✅ El "nombre tal cual" que pusiste en admin (normalizado) DEBE aparecer
+    // EJ: "viki rakuten" => debe salir "viki" o "viki rakuten" si quieres, pero aquí pediste "que tenga la palabra"
+    // Como los correos a veces no traen el nombre completo, hacemos:
+    //  - Palabras principales del nombre (tokens) y aceptamos si aparece AL MENOS 1 token "significativo"
+    const tokens = p
+      .replace(/[^\p{L}\p{N}\s+]/gu, " ") // limpia símbolos raros, mantiene letras/números (+ para disney+)
+      .split(/\s+/)
+      .map((t) => t.trim())
+      .filter(Boolean);
 
-    // Variantes comunes (puedes añadir más si quieres)
+    // tokens “significativos”: evita cosas como "tv", "app", "plus" solos
+    const stop = new Set(["tv", "app", "plus", "video", "stream", "streaming", "the", "of", "and"]);
+    const significant = tokens.filter((t) => t.length >= 3 && !stop.has(t));
+
+    // Si no hay tokens significativos, cae al nombre completo
+    const mustMatchList = significant.length ? significant : [p];
+
+    // ✅ Si NO aparece ninguna “palabra clave” de la plataforma => NO pasa
+    const strictHit = mustMatchList.some((t) => subj.includes(t) || frm.includes(t));
+    if (strictHit) return true;
+
+    // 🔁 Variantes comunes (solo ayudan cuando la plataforma real usa otro nombre típico)
+    // OJO: esto sigue siendo estricto, porque SOLO se usa si coincide la clave de esa plataforma.
     const aliases = {
       "hbo": ["hbomax", "hbo max"],
+      "hbomax": ["hbo", "hbo max"],
       "disney": ["disney+", "disney plus"],
+      "disney+": ["disney", "disney plus"],
       "netflix": ["netflix"],
       "prime": ["prime video", "amazon prime", "amazon prime video"],
       "amazon": ["prime video", "amazon prime", "amazon prime video"],
-      "spotify": ["spotify"]
+      "spotify": ["spotify"],
+      "youtube": ["youtube", "google", "google llc"],
+      "crunchyroll": ["crunchyroll"],
+      "viki": ["viki", "rakuten viki", "viki rakuten"],
+      "rakuten": ["rakuten", "rakuten viki", "viki"]
     };
 
     const extra = aliases[p] || [];
@@ -97,8 +127,8 @@ export async function fetchEmailsForAlias(alias, platform = "all") {
 
     const uids = await client.search({ to: `${alias}@cryxteam.com` });
 
-    // ✅ Revisamos un pool reciente para poder filtrar y aún así obtener 3
-    const recentPool = uids.slice(-80).reverse(); // últimos 80, recientes primero
+    // ✅ pool reciente para filtrar y aún así conseguir 3
+    const recentPool = uids.slice(-120).reverse(); // subí a 120 por si el filtro estricto es fuerte
 
     for (const uid of recentPool) {
       const msg = await client.fetchOne(uid, { source: true });
@@ -107,11 +137,11 @@ export async function fetchEmailsForAlias(alias, platform = "all") {
       const subjectRaw = parsed.subject || "";
       const fromText = parsed.from?.text || "";
 
-      // ❌ BLOQUEAR SOLO "cambio de correo/email"
+      // ❌ bloquear SOLO cambio de correo/email
       if (shouldBlockEmailChange(subjectRaw, fromText)) continue;
 
-      // 🎯 Filtrar por plataforma (la que tú le pases)
-      if (!matchesPlatform(subjectRaw, fromText, platform)) continue;
+      // ✅ filtro ESTRICTO por plataforma
+      if (!matchesPlatformStrict(subjectRaw, fromText, platform)) continue;
 
       emails.push({
         from: parsed.from?.text || null,

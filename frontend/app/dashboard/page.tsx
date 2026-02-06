@@ -5,10 +5,15 @@ import { supabase } from "@/lib/supabaseClient";
 import styles from "./dashboard.module.css";
 
 type Platform = { id: number; name: string };
+
 type Assignment = {
   id: number;
   mail_alias?: { alias?: string; domain?: string; full_email?: string };
   platform?: { id?: number; name?: string };
+
+  // ✅ NUEVO (días)
+  days_total?: number | null;
+  days_start_at?: string | null;
 };
 
 type EmailItem = {
@@ -41,8 +46,16 @@ export default function Dashboard() {
   const [consultLoading, setConsultLoading] = useState<Record<string, boolean>>({});
   const [expandedEmailIndex, setExpandedEmailIndex] = useState<Record<number, boolean>>({});
 
+  // ✅ Fuerza re-render del contador cada minuto (para que baje “solo”)
+  const [, setNowTick] = useState(0);
+
   useEffect(() => {
     fetchAssignments();
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setNowTick((v) => v + 1), 60 * 1000);
+    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
@@ -81,6 +94,8 @@ export default function Dashboard() {
         .from("assignments")
         .select(`
           id,
+          days_total,
+          days_start_at,
           mail_alias:mail_alias_id(full_email, alias, domain),
           platform:platform_id(id, name)
         `)
@@ -163,6 +178,26 @@ export default function Dashboard() {
     return fullEmail;
   }
 
+  // ✅ Días restantes por assignment (desde days_start_at)
+  function daysLeft(a: Assignment) {
+    if (typeof a.days_total !== "number" || !a.days_start_at) return null;
+
+    const start = new Date(a.days_start_at).getTime();
+    const now = Date.now();
+
+    const elapsedDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+    const left = a.days_total - elapsedDays;
+
+    return left <= 0 ? 0 : left;
+  }
+
+  function daysLabel(a: Assignment) {
+    const left = daysLeft(a);
+    if (left === null) return null;
+    if (left === 0) return "Vencido";
+    return `${left} días`;
+  }
+
   async function handleConsult(aliasRow: Assignment) {
     const full = getFullEmail(aliasRow);
     if (!full) {
@@ -179,7 +214,11 @@ export default function Dashboard() {
 
     try {
       const platformName = (aliasRow.platform?.name || "all").toLowerCase();
-const res = await fetch(`${API_BASE}/emails?alias=${encodeURIComponent(sendAlias)}&platform=${encodeURIComponent(platformName)}`);
+      const res = await fetch(
+        `${API_BASE}/emails?alias=${encodeURIComponent(sendAlias)}&platform=${encodeURIComponent(
+          platformName
+        )}`
+      );
       if (!res.ok) throw new Error("bad response");
       const data = await res.json();
 
@@ -211,7 +250,11 @@ const res = await fetch(`${API_BASE}/emails?alias=${encodeURIComponent(sendAlias
     setMsg("⏳ Refrescando correos...");
     try {
       const platformName = (selectedPlatform?.name || "all").toLowerCase();
-const res = await fetch(`${API_BASE}/emails?alias=${encodeURIComponent(sendAlias)}&platform=${encodeURIComponent(platformName)}`);
+      const res = await fetch(
+        `${API_BASE}/emails?alias=${encodeURIComponent(sendAlias)}&platform=${encodeURIComponent(
+          platformName
+        )}`
+      );
       if (!res.ok) throw new Error("bad response");
       const data = await res.json();
 
@@ -256,7 +299,9 @@ const res = await fetch(`${API_BASE}/emails?alias=${encodeURIComponent(sendAlias
 
       {!selectedPlatform && (
         <div className={styles.platformList}>
-          {platforms.length === 0 && <p>{loadingAssignments ? "Cargando..." : "No hay plataformas."}</p>}
+          {platforms.length === 0 && (
+            <p>{loadingAssignments ? "Cargando..." : "No hay plataformas."}</p>
+          )}
 
           {platforms.map((p) => {
             const count = assignments.filter((a) => a.platform?.id === p.id).length;
@@ -267,7 +312,14 @@ const res = await fetch(`${API_BASE}/emails?alias=${encodeURIComponent(sendAlias
                 className={styles.platformCard}
                 onClick={() => handleSelectPlatform(p)}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    width: "100%",
+                    alignItems: "center",
+                  }}
+                >
                   <span className={styles.pName}>🎬 {p.name}</span>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <span className={styles.badge}>{count} correos</span>
@@ -318,11 +370,25 @@ const res = await fetch(`${API_BASE}/emails?alias=${encodeURIComponent(sendAlias
               const full = getFullEmail(a);
               const sendAlias = aliasForSend(full);
               const isConsulting = !!consultLoading[sendAlias];
+
+              const label = daysLabel(a);
+              const left = daysLeft(a);
+
               return (
                 <div key={a.id} className={styles.mailRow}>
-                  <span className={styles.mailText} title={full}>
-                    {full}
-                  </span>
+                  <div className={styles.mailText} title={full}>
+                    <span>{full}</span>
+
+                    {label && (
+                      <span
+                        className={left === 0 ? styles.daysBadgeExpired : styles.daysBadge}
+                        title="Días restantes"
+                      >
+                        ⏳ {label}
+                      </span>
+                    )}
+                  </div>
+
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       className={styles.consultBtn}
@@ -382,37 +448,33 @@ const res = await fetch(`${API_BASE}/emails?alias=${encodeURIComponent(sendAlias
                         </div>
                       </div>
 
-                      <button
-                        className={styles.smallRefresh}
-                        onClick={() => toggleExpandEmail(i)}
-                      >
+                      <button className={styles.smallRefresh} onClick={() => toggleExpandEmail(i)}>
                         {expandedEmailIndex[i] ? "Ocultar" : "Ver"}
                       </button>
                     </div>
 
                     {expandedEmailIndex[i] && (
-  <div style={{ marginTop: 10 }}>
-    {e.html ? (
-      <iframe
-        style={{
-          width: "100%",
-          height: 350,
-          border: "none",
-          background: "#fff"
-        }}
-        sandbox="allow-same-origin allow-popups allow-forms"
-        srcDoc={e.html}
-      />
-    ) : e.text ? (
-      <pre style={{ whiteSpace: "pre-wrap", maxHeight: 350, overflow: "auto" }}>
-        {e.text}
-      </pre>
-    ) : (
-      <p>(sin contenido)</p>
-    )}
-  </div>
-)}
-
+                      <div style={{ marginTop: 10 }}>
+                        {e.html ? (
+                          <iframe
+                            style={{
+                              width: "100%",
+                              height: 350,
+                              border: "none",
+                              background: "#fff",
+                            }}
+                            sandbox="allow-same-origin allow-popups allow-forms"
+                            srcDoc={e.html}
+                          />
+                        ) : e.text ? (
+                          <pre style={{ whiteSpace: "pre-wrap", maxHeight: 350, overflow: "auto" }}>
+                            {e.text}
+                          </pre>
+                        ) : (
+                          <p>(sin contenido)</p>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -6,10 +6,13 @@ import styles from "./d1nspcl1.module.css";
 import { useRouter } from "next/navigation";
 
 type Platform = { id: number; name: string; active?: boolean };
+
 type Assignment = {
   id: number;
   mail_alias?: { full_email?: string; alias?: string; domain?: string };
   platform?: { id?: number; name?: string };
+  days_total?: number | null;
+  days_start_at?: string | null;
 };
 
 const DOMAIN = "cryxteam.com";
@@ -21,6 +24,7 @@ export default function SecretPanel() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [alias, setAlias] = useState<string>("");
   const [platform, setPlatform] = useState<string>("");
+  const [days, setDays] = useState<string>(""); // ✅ NUEVO
   const [msg, setMsg] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -120,6 +124,8 @@ export default function SecretPanel() {
       .from("assignments")
       .select(`
         id,
+        days_total,
+        days_start_at,
         mail_alias:mail_alias_id(full_email, alias, domain),
         platform:platform_id(id, name)
       `)
@@ -203,10 +209,15 @@ export default function SecretPanel() {
       return;
     }
 
+    // ✅ NUEVO: days_total + days_start_at (empieza a correr AHORA)
+    const daysNum = days.trim() ? Number(days.trim()) : null;
+
     const { error } = await supabase.from("assignments").insert({
       profile_id: userId,
       mail_alias_id: mailAliasId,
       platform_id: Number(platform),
+      days_total: daysNum,
+      days_start_at: daysNum ? new Date().toISOString() : null,
     });
 
     setLoading(false);
@@ -219,6 +230,7 @@ export default function SecretPanel() {
     setMsg("✔ Correo asignado correctamente.");
     setAlias("");
     setPlatform("");
+    setDays(""); // ✅ NUEVO
     if (userId) await fetchAssignments(userId);
   }
 
@@ -315,6 +327,14 @@ export default function SecretPanel() {
                 ))}
               </select>
 
+              {/* ✅ NUEVO: DIAS */}
+              <input
+                className={styles.input}
+                placeholder="Días (ej: 30) — opcional"
+                value={days}
+                onChange={(e) => setDays(e.target.value.replace(/\D/g, ""))}
+              />
+
               <button className={styles.btn} onClick={assignAlias} disabled={loading}>
                 {loading ? "..." : "Asignar"}
               </button>
@@ -326,11 +346,24 @@ export default function SecretPanel() {
               ) : (
                 <ul className={styles.list}>
                   {assignments.map((a) => (
-                    <li key={a.id} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                    <li
+                      key={a.id}
+                      className={styles.asgRow}
+                    >
                       <span>
-                        {a.mail_alias?.full_email ||
-                          `${a.mail_alias?.alias}@${a.mail_alias?.domain}`}{" "}
+                        {a.mail_alias?.full_email || `${a.mail_alias?.alias}@${a.mail_alias?.domain}`}{" "}
                         → <b>{a.platform?.name ?? "—"}</b>
+
+                        {/* ✅ NUEVO: badge dias */}
+                        {typeof a.days_total === "number" && a.days_start_at ? (
+                          <span className={styles.daysBadge}>
+                            ⏳ {a.days_total} días
+                          </span>
+                        ) : (
+                          <span className={styles.daysBadgeMuted}>
+                            ⏳ sin días
+                          </span>
+                        )}
                       </span>
 
                       <div style={{ display: "flex", gap: 6 }}>
